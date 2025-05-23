@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Page App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #app {
+      width: 80%;
+      max-width: 800px;
+      margin-top: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .task-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+    }
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+    }
+    .task-actions button {
+      margin-left: 5px;
+    }
+    .category-select {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>Task Manager</h1>
+    <div>
+      <input type="text" id="new-task" placeholder="Enter new task">
+      <select id="category" class="category-select">
+        <option value="Physiological">Physiological</option>
+        <option value="Physical">Physical</option>
+        <option value="Work">Work</option>
+        <option value="Social">Social</option>
+        <option value="Recreation">Recreation</option>
+        <option value="Cognitive">Cognitive</option>
+        <option value="Distractions">Distractions</option>
+      </select>
+      <button onclick="addTask()">Add Task</button>
+    </div>
+    <div id="category-filter">
+      <label for="category-filter">Filter by category:</label>
+      <select id="category-filter-select">
+        <option value="all">All Categories</option>
+        <option value="Physiological">Physiological</option>
+        <option value="Physical">Physical</option>
+        <option value="Work">Work</option>
+        <option value="Social">Social</option>
+        <option value="Recreation">Recreation</option>
+        <option value="Cognitive">Cognitive</option>
+        <option value="Distractions">Distractions</option>
+      </select>
+    </div>
+    <ul id="task-list" class="task-list"></ul>
+    <div id="dashboard">
+      <h2>Dashboard</h2>
+      <p>Total tasks: <span id="total-count">0</span></p>
+      <p>Completed tasks: <span id="completed-count">0</span></p>
+      <p>Pending tasks: <span id="pending-count">0</span></p>
+    </div>
+  </div>
+
+  <script>
+    const categories = ['Physiological', 'Physical', 'Work', 'Social', 'Recreation', 'Cognitive', 'Distractions'];
+
+    let tasks = [];
+    let selectedCategory = 'all';
+
+    function saveTasksToLocalStorage() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function loadTasksFromLocalStorage() {
+      const tasksJSON = localStorage.getItem('tasks');
+      if (tasksJSON) {
+        tasks = JSON.parse(tasksJSON);
+        renderTasks();
+        updateDashboard();
+      }
+    }
+
+    async function loadTasks() {
+      const response = await fetch('/api/tasks');
+      tasks = await response.json();
+      renderTasks();
+      updateDashboard();
+    }
+
+    function renderTasks() {
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = '';
+
+      const filteredTasks = selectedCategory === 'all'
+        ? tasks
+        : tasks.filter(task => task.category === selectedCategory);
+
+      filteredTasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = 'task-item' + (task.completed ? ' completed' : '');
+        li.innerHTML = `
+          <span class="task-text">${task.text} (${task.category})</span>
+          <div class="task-actions">
+            <button onclick="toggleComplete(${task.id})">${task.completed ? 'Undo' : 'Complete'}</button>
+            <button onclick="deleteTask(${task.id})">Delete</button>
+          </div>
+        `;
+        taskList.appendChild(li);
+      });
+    }
+
+    function filterTasksByCategory(category) {
+      selectedCategory = category;
+      renderTasks();
+    }
+
+    function updateDashboard() {
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.completed).length;
+      const pending = total - completed;
+
+      document.getElementById('total-count').textContent = total;
+      document.getElementById('completed-count').textContent = completed;
+      document.getElementById('pending-count').textContent = pending;
+    }
+
+    async function addTask() {
+      const text = document.getElementById('new-task').value.trim();
+      const category = document.getElementById('category').value;
+
+      if (text) {
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: Date.now(),
+            text,
+            category,
+            completed: false
+          })
+        });
+
+        const newTask = await response.json();
+        tasks.push(newTask);
+        document.getElementById('new-task').value = '';
+        renderTasks();
+        updateDashboard();
+        saveTasksToLocalStorage();
+      }
+    }
+
+    async function toggleComplete(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+
+        await fetch(`/api/tasks/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(task)
+        });
+
+        renderTasks();
+        updateDashboard();
+        saveTasksToLocalStorage();
+      }
+    }
+
+    async function deleteTask(id) {
+      await fetch(`/api/tasks/${id}`, {
+        method: 'DELETE'
+      });
+
+      tasks = tasks.filter(t => t.id !== id);
+      renderTasks();
+      updateDashboard();
+      saveTasksToLocalStorage();
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      // Add event listener for category filter
+      document.getElementById('category-filter-select').addEventListener('change', (event) => {
+        filterTasksByCategory(event.target.value);
+      });
+
+      if (localStorage.getItem('tasks')) {
+        loadTasksFromLocalStorage();
+      } else {
+        loadTasks();
+      }
+    });
+
+    window.addEventListener('beforeunload', saveTasksToLocalStorage);
+  </script>
+</body>
+</html>
