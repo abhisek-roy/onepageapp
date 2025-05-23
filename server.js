@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = 53305; // Using the provided port
 
@@ -8,8 +9,14 @@ const PORT = 53305; // Using the provided port
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// In-memory storage for tasks
+// Load tasks from JSON file
 let tasks = [];
+try {
+  const tasksData = fs.readFileSync(path.join(__dirname, 'tasks.json'), 'utf8');
+  tasks = JSON.parse(tasksData);
+} catch (err) {
+  console.log('Failed to load tasks from JSON file, starting with empty tasks list');
+}
 
 // API routes
 app.get('/api/tasks', (req, res) => {
@@ -53,6 +60,26 @@ app.get('*', (req, res) => {
 });
 
 // Start the server
+const saveTasksToFile = () => {
+  try {
+    fs.writeFileSync(path.join(__dirname, 'tasks.json'), JSON.stringify(tasks, null, 2), 'utf8');
+    console.log('Tasks saved to tasks.json');
+  } catch (err) {
+    console.error('Failed to save tasks to tasks.json', err);
+  }
+};
+
+// Save tasks to file on server shutdown
+process.on('SIGINT', () => {
+  saveTasksToFile();
+  process.exit();
+});
+
+process.on('SIGTERM', () => {
+  saveTasksToFile();
+  process.exit();
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
