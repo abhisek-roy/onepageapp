@@ -47,6 +47,7 @@
     <h1>Task Manager</h1>
     <div>
       <input type="text" id="new-task" placeholder="Enter new task">
+      <input type="text" id="duration" placeholder="Duration (e.g., 2h, 30m, 1d)">
       <select id="category" class="category-select">
         <option value="Physiological">Physiological</option>
         <option value="Physical">Physical</option>
@@ -119,6 +120,10 @@
         li.className = 'task-item' + (task.completed ? ' completed' : '');
         li.innerHTML = `
           <span class="task-text">${task.text} (${task.category})</span>
+          <div>
+            <small>Start: ${new Date(task.startDate).toLocaleString()} - End: ${new Date(task.endDate).toLocaleString()}</small>
+            ${task.duration ? `<small>Duration: ${task.duration}</small>` : ''}
+          </div>
           <div class="task-actions">
             <button onclick="toggleComplete(${task.id})">${task.completed ? 'Undo' : 'Complete'}</button>
             <button onclick="deleteTask(${task.id})">Delete</button>
@@ -146,6 +151,7 @@
     async function addTask() {
       const text = document.getElementById('new-task').value.trim();
       const category = document.getElementById('category').value;
+      const duration = document.getElementById('duration').value.trim();
 
       if (text) {
         const response = await fetch('/api/tasks', {
@@ -157,13 +163,15 @@
             id: Date.now(),
             text,
             category,
-            completed: false
+            completed: false,
+            duration: duration
           })
         });
 
         const newTask = await response.json();
         tasks.push(newTask);
         document.getElementById('new-task').value = '';
+        document.getElementById('duration').value = '';
         renderTasks();
         updateDashboard();
         saveTasksToLocalStorage();
