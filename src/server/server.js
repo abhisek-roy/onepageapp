@@ -25,8 +25,19 @@ app.get('/api/tasks', (req, res) => {
 
 app.post('/api/tasks', (req, res) => {
   const newTask = req.body;
-  tasks.push(newTask);
-  res.status(201).json(newTask);
+  // Add startDate and endDate to new tasks
+  const currentTime = new Date();
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const taskWithDates = {
+    ...newTask,
+    startDate: currentTime.toISOString(),
+    endDate: endOfDay.toISOString()
+  };
+
+  tasks.push(taskWithDates);
+  res.status(201).json(taskWithDates);
 });
 
 app.put('/api/tasks/:id', (req, res) => {

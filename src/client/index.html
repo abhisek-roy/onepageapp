@@ -119,6 +119,9 @@
         li.className = 'task-item' + (task.completed ? ' completed' : '');
         li.innerHTML = `
           <span class="task-text">${task.text} (${task.category})</span>
+          <div>
+            <small>Start: ${new Date(task.startDate).toLocaleString()} - End: ${new Date(task.endDate).toLocaleString()}</small>
+          </div>
           <div class="task-actions">
             <button onclick="toggleComplete(${task.id})">${task.completed ? 'Undo' : 'Complete'}</button>
             <button onclick="deleteTask(${task.id})">Delete</button>
