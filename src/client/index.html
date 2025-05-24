@@ -72,6 +72,18 @@
         <option value="Distractions">Distractions</option>
       </select>
     </div>
+    <div id="date-filter">
+      <label for="date-filter">Filter by date:</label>
+      <select id="date-filter-select">
+        <option value="all">All Dates</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="this-week">This Week</option>
+        <option value="last-week">Last Week</option>
+        <option value="this-month">This Month</option>
+        <option value="last-month">Last Month</option>
+      </select>
+    </div>
     <ul id="task-list" class="task-list"></ul>
     <div id="dashboard">
       <h2>Dashboard</h2>
@@ -86,6 +98,7 @@
 
     let tasks = [];
     let selectedCategory = 'all';
+    let selectedDateFilter = 'all';
 
     function saveTasksToLocalStorage() {
       localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -111,9 +124,22 @@
       const taskList = document.getElementById('task-list');
       taskList.innerHTML = '';
 
-      const filteredTasks = selectedCategory === 'all'
+      // Filter by category first
+      let filteredTasks = selectedCategory === 'all'
         ? tasks
         : tasks.filter(task => task.category === selectedCategory);
+
+      // Then filter by date if a date filter is selected
+      if (selectedDateFilter !== 'all') {
+        const dateRange = getDateRangeForFilter(selectedDateFilter);
+        if (dateRange) {
+          filteredTasks = filteredTasks.filter(task => {
+            const startDate = new Date(task.startDate);
+            const endDate = new Date(task.endDate);
+            return startDate >= dateRange.start && endDate <= dateRange.end;
+          });
+        }
+      }
 
       filteredTasks.forEach(task => {
         const li = document.createElement('li');
@@ -136,6 +162,38 @@
     function filterTasksByCategory(category) {
       selectedCategory = category;
       renderTasks();
+    }
+
+    function filterTasksByDate(dateFilter) {
+      selectedDateFilter = dateFilter;
+      renderTasks();
+    }
+
+    function getDateRangeForFilter(filter) {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+      const lastWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 7);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+      switch (filter) {
+        case 'today':
+          return { start: todayStart, end: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000) };
+        case 'yesterday':
+          return { start: yesterdayStart, end: new Date(yesterdayStart.getTime() + 24 * 60 * 60 * 1000) };
+        case 'this-week':
+          return { start: weekStart, end: new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000) };
+        case 'last-week':
+          return { start: lastWeekStart, end: new Date(lastWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000) };
+        case 'this-month':
+          return { start: monthStart, end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999) };
+        case 'last-month':
+          return { start: lastMonthStart, end: new Date(lastMonthStart.getFullYear(), lastMonthStart.getMonth() + 1, 0, 23, 59, 59, 999) };
+        default:
+          return null;
+      }
     }
 
     function updateDashboard() {
@@ -213,6 +271,11 @@
       // Add event listener for category filter
       document.getElementById('category-filter-select').addEventListener('change', (event) => {
         filterTasksByCategory(event.target.value);
+      });
+
+      // Add event listener for date filter
+      document.getElementById('date-filter-select').addEventListener('change', (event) => {
+        filterTasksByDate(event.target.value);
       });
 
       if (localStorage.getItem('tasks')) {
