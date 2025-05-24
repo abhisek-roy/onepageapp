@@ -25,15 +25,34 @@ app.get('/api/tasks', (req, res) => {
 
 app.post('/api/tasks', (req, res) => {
   const newTask = req.body;
-  // Add startDate and endDate to new tasks
+
+  // Parse the duration and calculate the end date
+  let duration = 0;
+  if (newTask.duration) {
+    const durationMatch = newTask.duration.match(/(\d+)([a-zA-Z]+)/);
+    if (durationMatch) {
+      const value = parseInt(durationMatch[1], 10);
+      const unit = durationMatch[2].toLowerCase();
+
+      if (unit === 'm') {
+        duration = value;
+      } else if (unit === 'h') {
+        duration = value * 60;
+      } else if (unit === 'd') {
+        duration = value * 24 * 60;
+      }
+    }
+  }
+
+  // Set default startDate and calculate endDate based on duration
   const currentTime = new Date();
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const endDate = new Date(currentTime);
+  endDate.setMinutes(currentTime.getMinutes() + duration);
 
   const taskWithDates = {
     ...newTask,
     startDate: currentTime.toISOString(),
-    endDate: endOfDay.toISOString()
+    endDate: endDate.toISOString()
   };
 
   tasks.push(taskWithDates);
