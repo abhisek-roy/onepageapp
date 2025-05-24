@@ -37,8 +37,9 @@
     .task-actions button {
       margin-left: 5px;
     }
-    .category-select {
+    .category-select, .task-date {
       margin-bottom: 10px;
+      margin-left: 5px;
     }
   </style>
 </head>
@@ -48,6 +49,7 @@
     <div>
       <input type="text" id="new-task" placeholder="Enter new task">
       <input type="text" id="duration" placeholder="Duration (e.g., 2h, 30m, 1d)">
+      <input type="date" id="task-date" class="task-date">
       <select id="category" class="category-select">
         <option value="Physiological">Physiological</option>
         <option value="Physical">Physical</option>
@@ -82,9 +84,15 @@
         <option value="last-week">Last Week</option>
         <option value="this-month">This Month</option>
         <option value="last-month">Last Month</option>
+        <option value="custom">Custom Date</option>
       </select>
+      <input type="date" id="custom-date-picker" style="display:none; margin-left: 10px;">
+      <button id="apply-custom-date" style="display:none; margin-left: 5px;" onclick="applyCustomDate()">Apply</button>
     </div>
     <ul id="task-list" class="task-list"></ul>
+    <div id="selected-date">
+      <h3>Selected Date: <span id="selected-date-display">All Dates</span></h3>
+    </div>
     <div id="dashboard">
       <h2>Dashboard</h2>
       <p>Total tasks: <span id="total-count">0</span></p>
@@ -166,7 +174,49 @@
 
     function filterTasksByDate(dateFilter) {
       selectedDateFilter = dateFilter;
+
+      // If dateFilter is a specific date, update the date picker
+      if (dateFilter instanceof Date) {
+        const dateString = dateFilter.toISOString().split('T')[0];
+        document.getElementById('task-date').value = dateString;
+        document.getElementById('selected-date-display').textContent = dateString;
+      } else if (typeof dateFilter === 'string' && dateFilter.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        document.getElementById('task-date').value = dateFilter;
+        document.getElementById('selected-date-display').textContent = dateFilter;
+      } else {
+        // Update display for predefined date ranges
+        let displayText = 'All Dates';
+        switch (dateFilter) {
+          case 'today': displayText = 'Today'; break;
+          case 'yesterday': displayText = 'Yesterday'; break;
+          case 'this-week': displayText = 'This Week'; break;
+          case 'last-week': displayText = 'Last Week'; break;
+          case 'this-month': displayText = 'This Month'; break;
+          case 'last-month': displayText = 'Last Month'; break;
+        }
+        document.getElementById('selected-date-display').textContent = displayText;
+      }
+
       renderTasks();
+    }
+
+    function applyCustomDate() {
+      const customDate = document.getElementById('custom-date-picker').value;
+      if (customDate) {
+        filterTasksByDate(customDate);
+        document.getElementById('date-filter-select').value = 'custom';
+        hideCustomDatePicker();
+      }
+    }
+
+    function showCustomDatePicker() {
+      document.getElementById('custom-date-picker').style.display = 'inline-block';
+      document.getElementById('apply-custom-date').style.display = 'inline-block';
+    }
+
+    function hideCustomDatePicker() {
+      document.getElementById('custom-date-picker').style.display = 'none';
+      document.getElementById('apply-custom-date').style.display = 'none';
     }
 
     function getDateRangeForFilter(filter) {
@@ -177,6 +227,14 @@
       const lastWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 7);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+      // If filter is a specific date string, return that date range
+      if (typeof filter === 'string' && filter.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const date = new Date(filter);
+        const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+        return { start, end };
+      }
 
       switch (filter) {
         case 'today':
@@ -210,6 +268,7 @@
       const text = document.getElementById('new-task').value.trim();
       const category = document.getElementById('category').value;
       const duration = document.getElementById('duration').value.trim();
+      const date = document.getElementById('task-date').value;
 
       if (text) {
         const response = await fetch('/api/tasks', {
@@ -222,7 +281,9 @@
             text,
             category,
             completed: false,
-            duration: duration
+            duration: duration,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
           })
         });
 
@@ -230,6 +291,7 @@
         tasks.push(newTask);
         document.getElementById('new-task').value = '';
         document.getElementById('duration').value = '';
+        document.getElementById('task-date').value = '';
         renderTasks();
         updateDashboard();
         saveTasksToLocalStorage();
@@ -275,7 +337,13 @@
 
       // Add event listener for date filter
       document.getElementById('date-filter-select').addEventListener('change', (event) => {
-        filterTasksByDate(event.target.value);
+        const value = event.target.value;
+        if (value === 'custom') {
+          showCustomDatePicker();
+        } else {
+          hideCustomDatePicker();
+          filterTasksByDate(value);
+        }
       });
 
       if (localStorage.getItem('tasks')) {

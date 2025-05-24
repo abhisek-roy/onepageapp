@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": 1,
+    "text": "Test Task",
+    "category": "Work",
+    "completed": false
+  },
+  {
+    "id": 1748019564933,
+    "text": "sleep",
+    "category": "Physiological",
+    "completed": true
+  },
+  {
+    "id": 1748019580723,
+    "text": "work",
+    "category": "Work",
+    "completed": true
+  },
+  {
+    "id": 1748020000002,
+    "text": "Test Task for Today",
+    "category": "Work",
+    "completed": false,
+    "startDate": "2025-05-24T16:54:53.719Z",
+    "endDate": "2025-05-24T16:54:53.719Z"
+  }
+]

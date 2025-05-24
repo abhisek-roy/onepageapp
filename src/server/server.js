@@ -92,7 +92,7 @@ app.get('*', (req, res) => {
 // Start the server
 const saveTasksToFile = () => {
   try {
-    fs.writeFileSync(path.join(__dirname, 'tasks.json'), JSON.stringify(tasks, null, 2), 'utf8');
+    fs.writeFileSync(path.join(__dirname, '../data/tasks.json'), JSON.stringify(tasks, null, 2), 'utf8');
     console.log('Tasks saved to tasks.json');
   } catch (err) {
     console.error('Failed to save tasks to tasks.json', err);
