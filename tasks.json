@@ -3,7 +3,7 @@
     "id": 1,
     "text": "Test Task",
     "category": "Work",
-    "completed": true
+    "completed": false
   },
   {
     "id": 1748019564933,

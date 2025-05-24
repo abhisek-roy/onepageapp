@@ -1,0 +1,8 @@
+# Node modules
+node_modules/
+
+# Log files
+*.log
+
+# Data files
+src/data/tasks.json

@@ -3,16 +3,16 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 const app = express();
-const PORT = 53305; // Using the provided port
+const PORT = 54040; // Using the provided port
 
 // Middleware
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../client')));
 
 // Load tasks from JSON file
 let tasks = [];
 try {
-  const tasksData = fs.readFileSync(path.join(__dirname, 'tasks.json'), 'utf8');
+  const tasksData = fs.readFileSync(path.join(__dirname, '../data/tasks.json'), 'utf8');
   tasks = JSON.parse(tasksData);
 } catch (err) {
   console.log('Failed to load tasks from JSON file, starting with empty tasks list');
@@ -56,7 +56,7 @@ app.delete('/api/tasks/:id', (req, res) => {
 
 // Serve the main page
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../client', 'index.html'));
 });
 
 // Start the server
