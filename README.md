@@ -49,9 +49,11 @@ To run the main server with persistent storage:
 node src/server/server.js
 ```
 
-The application will be available at http://localhost:54040
+The application will be available at http://localhost:50083
 
 ## Server Options
+
+All servers will be available at http://localhost:50083
 
 - `src/server/server.js`: Main server with persistent storage
 - `src/server/basic-server.js`: Basic server with persistent storage
